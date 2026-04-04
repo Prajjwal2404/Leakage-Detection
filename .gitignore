@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual Environments
+venv/
+.venv/
+
+# Datasets and Large Files
+Dataset/
+*.csv
+*.xlsx
+*.xls
+
+# VS Code
+.vscode/
