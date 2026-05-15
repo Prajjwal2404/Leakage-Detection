@@ -1,7 +1,7 @@
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from data_preprocess import load_and_preprocess_data
 
 
@@ -17,7 +17,7 @@ def train_evaluate_model(scada_file, leakages_file):
     
     # 3. Initialize and Train the Model
     print("\nTraining the model...")
-    model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42, n_jobs=-1)
+    model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
     model.fit(X_train, Y_train)
     
     # 4. Predict and Evaluate
@@ -27,13 +27,9 @@ def train_evaluate_model(scada_file, leakages_file):
     print("\n" + "="*30)
     print("--- RANDOM FOREST MODEL EVALUATION ---")
     print("="*30)
-    print(f"Accuracy (RF): {accuracy_score(Y_test, Y_pred) * 100:.2f}%\n")
-    
-    print("Classification Report (RF):")
-    print(classification_report(Y_test, Y_pred))
-    
-    print("Confusion Matrix (RF):")
-    print(confusion_matrix(Y_test, Y_pred))
+    print(f"Mean Squared Error (MSE): {mean_squared_error(Y_test, Y_pred):.4f}")
+    print(f"Mean Absolute Error (MAE): {mean_absolute_error(Y_test, Y_pred):.4f}")
+    print(f"R-squared (R2): {r2_score(Y_test, Y_pred):.4f}")
 
 if __name__ == "__main__":
     scada_file = os.path.join('Dataset', '2018_SCADA.xlsx')

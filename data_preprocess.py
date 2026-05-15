@@ -51,15 +51,15 @@ def load_and_preprocess_data(scada_path, leakages_path, resample_freq='1h', roll
     # Force all pipe columns to numeric (handling European comma decimals or string artifacts if any exist)
     df_leakages = df_leakages.replace(',', '.', regex=True).apply(pd.to_numeric, errors='coerce').fillna(0)
 
-    # Create Binary Column: Is there ANY leak?
-    df_leakages['Any_Leak'] = (df_leakages.max(axis=1) > 0).astype(int)
+    # Create total leak column by summing all individual pipe leak columns
+    df_leakages['Total_Leak'] = df_leakages.sum(axis=1)
 
     # Resample Leakages to the same frequency as SCADA data.
-    df_leakages_resampled = df_leakages[['Any_Leak']].resample(resample_freq).max()
+    df_leakages_resampled = df_leakages[['Total_Leak']].resample(resample_freq).mean()
 
     # 8. Final Alignment
     X = df_resampled
-    Y = df_leakages_resampled.loc[X.index, 'Any_Leak']
+    Y = df_leakages_resampled.loc[X.index, 'Total_Leak']
 
     return X, Y
 
