@@ -1,6 +1,6 @@
 # Smart Water Leakage & Theft Detection System
 
-ML-powered pipeline anomaly detection using SCADA sensor data. Detects water leaks and abnormal usage patterns in real time to reduce water loss and operational costs.
+ML-powered pipeline for total leakage detection using SCADA sensor data. Detects water leaks and abnormal usage patterns in real time to reduce water loss and operational costs.
 
 ---
 
@@ -26,7 +26,7 @@ Leakage-Detection/
 ├── data_preprocess.py        # Data loading, feature engineering, target creation
 ├── rf_model.py               # Random Forest Regressor — train & evaluate
 ├── xgb_model.py              # XGBoost Regressor — train & evaluate
-├── if_model.py               # SVM Regressor (formerly Isolation Forest) — train & evaluate
+├── svm_model.py              # SVM Regressor — train & evaluate
 └── .gitignore
 ```
 
@@ -93,14 +93,14 @@ python rf_model.py
 python xgb_model.py
 ```
 
-### Support Vector Machine (`if_model.py`)
+### Support Vector Machine (`svm_model.py`)
 
 - **Type:** Supervised regression
 - **Algorithm:** `SVR` — RBF kernel
 - **Evaluation:** Mean Squared Error (MSE), Mean Absolute Error (MAE), R-squared (R2)
 
 ```bash
-python if_model.py
+python svm_model.py
 ```
 
 ---
@@ -115,7 +115,7 @@ python if_model.py
 ### Install Dependencies
 
 ```bash
-pip install pandas scikit-learn openpyxl
+pip install pandas scikit-learn xgboost openpyxl
 ```
 
 ### Run Preprocessing Only
@@ -139,7 +139,7 @@ python xgb_model.py
 ### Train & Evaluate SVM
 
 ```bash
-python if_model.py
+python svm_model.py
 ```
 
 ---
