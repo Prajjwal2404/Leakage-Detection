@@ -130,6 +130,10 @@ def train_evaluate_model(scada_file, leakages_file, epochs=100, patience=10):
                 Y_pred[i] = (test_errors[i] > threshold_night)
             else:
                 Y_pred[i] = (test_errors[i] > threshold_day)
+                
+        # 8. Export Model & Output Magnitudes
+        os.makedirs('Checkpoints', exist_ok=True)
+        torch.save(best_model_state, 'Checkpoints/gru_ae_best.pth')
         
         pd.DataFrame({
             'Actual_Leak_Magnitude': Y,
