@@ -1,8 +1,9 @@
-import pandas as pd
 import os
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 
-def load_and_preprocess_data(scada_path, leakages_path, resample_freq='1h', rolling_window=3):
+def load_and_preprocess_data(scada_path, leakages_path, rolling_window=3, magnitude=1.0, seq=False):
     # Load all sheets
     print("Loading SCADA data... This may take a moment.")
     df_pressures = pd.read_excel(scada_path, sheet_name='Pressures (m)')
@@ -24,25 +25,24 @@ def load_and_preprocess_data(scada_path, leakages_path, resample_freq='1h', roll
     df_scada['Timestamp'] = pd.to_datetime(df_scada['Timestamp'])
     df_scada.set_index('Timestamp', inplace=True)
 
-    # 4. Resample time intervals by averaging (mean)
-    df_resampled = df_scada.resample(resample_freq).mean()
+    # 4. Add Time Meta-Features
+    print("Adding Time Meta-features...")
+    df_scada['Hour'] = df_scada.index.hour
+    df_scada['Is_Nighttime'] = df_scada['Hour'].apply(lambda x: 1 if 2 <= x <= 6 else 0)
 
-    # 5. Add Time Meta-Features
-    print("Adding Time and Rolling features...")
-    df_resampled['Hour'] = df_resampled.index.hour
-    df_resampled['Is_Daytime'] = df_resampled['Hour'].apply(lambda x: 1 if 6 <= x <= 18 else 0)
+    if not seq:
+        # 5. Add Rolling Stats (Moving Average and Std Dev) and Centered Features
+        base_sensors = [c for c in df_scada.columns if c not in ['Hour', 'Is_Nighttime']]
+        
+        for col in base_sensors:
+            df_scada[f'{col}_RollMean'] = df_scada[col].rolling(window=rolling_window).mean()
+            df_scada[f'{col}_RollStd'] = df_scada[col].rolling(window=rolling_window).std()
+            df_scada[f'{col}_Diff'] = df_scada[col] - df_scada[f'{col}_RollMean']
 
-    # 6. Add Rolling Stats (Moving Average and Std Dev)
-    base_sensors = [c for c in df_resampled.columns if c not in ['Hour', 'Is_Daytime']]
-    
-    for col in base_sensors:
-        df_resampled[f'{col}_RollMean'] = df_resampled[col].rolling(window=rolling_window).mean()
-        df_resampled[f'{col}_RollStd'] = df_resampled[col].rolling(window=rolling_window).std()
+        # Drop NaNs created by rolling calculations
+        df_scada.dropna(inplace=True)
 
-    # Drop NaNs created by rolling calculations
-    df_resampled.dropna(inplace=True)
-
-    # 7. Process Leakages as the Target (Y)
+    # 6. Process Leakages as the Target (Y)
     print("Loading and preparing Target (Y)...")
     df_leakages = pd.read_csv(leakages_path, sep=';', low_memory=False)
     df_leakages['Timestamp'] = pd.to_datetime(df_leakages['Timestamp'])
@@ -51,15 +51,21 @@ def load_and_preprocess_data(scada_path, leakages_path, resample_freq='1h', roll
     # Force all pipe columns to numeric (handling European comma decimals or string artifacts if any exist)
     df_leakages = df_leakages.replace(',', '.', regex=True).apply(pd.to_numeric, errors='coerce').fillna(0)
 
-    # Create total leak column by summing all individual pipe leak columns
-    df_leakages['Total_Leak'] = df_leakages.sum(axis=1)
+    if magnitude < 0:
+        df_leakages['Leak'] = df_leakages.sum(axis=1)
+    else:
+        df_leakages['Leak'] = (df_leakages.sum(axis=1) > magnitude).astype(int)
 
-    # Resample Leakages to the same frequency as SCADA data.
-    df_leakages_resampled = df_leakages[['Total_Leak']].resample(resample_freq).mean()
+    # 7. Final Alignment
+    X = df_scada
+    Y = df_leakages.loc[X.index, 'Leak']
 
-    # 8. Final Alignment
-    X = df_resampled
-    Y = df_leakages_resampled.loc[X.index, 'Total_Leak']
+    if seq:
+        # 8. Scale and Sequence Data for RNN
+        print("Scaling and sequencing data for RNN...")
+        Is_Nighttime = X['Is_Nighttime'].to_numpy()
+        X[X.columns] = StandardScaler().fit_transform(X[X.columns])
+        return X.to_numpy(), Y.to_numpy(), Is_Nighttime
 
     return X, Y
 
@@ -68,7 +74,7 @@ if __name__ == '__main__':
     scada_file = os.path.join('Dataset', '2018_SCADA.xlsx')
     leakages_file = os.path.join('Dataset', '2018_Leakages.csv')
     
-    X, Y = load_and_preprocess_data(scada_file, leakages_file, resample_freq='5min', rolling_window=36)
+    X, Y = load_and_preprocess_data(scada_file, leakages_file, rolling_window=36)
     
     print("Preprocessing Complete!")
     print(f"X shape: {X.shape}")
