@@ -25,10 +25,13 @@ During inference, if the model fails to reconstruct a sequence (resulting in a h
 
 ```
 Leakage-Detection/
+├── Checkpoints/
+│   └── gru_ae_best.pth       # Trained GRU Autoencoder weights
 ├── Dataset/
 │   ├── 2018_SCADA.xlsx       # Sensor readings (pressures, flows, levels, demands)
 │   └── 2018_Leakages.csv     # Ground truth leakage events per pipe
 ├── data_preprocess.py        # Alignments, scaling, sequence/sliding windows
+├── gru_ae_infer.py           # Inference Backend: Loads GRU model, outputs leak status
 ├── gru_ae_model.py           # Flagship Model: GRU Seq-to-Seq Autoencoder
 ├── rf_model.py               # Legacy Baseline: Random Forest
 ├── xgb_model.py              # Legacy Baseline: XGBoost
