@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Leakage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100 p-8 min-h-screen">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-gray-800 flex items-center gap-3">
+            <span class="text-4xl">💧</span> Water Leakage Detection Dashboard
+        </h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-3 text-gray-500 uppercase tracking-wider text-sm">System Status</h2>
+                <div id="status-badge"
+                    class="px-5 py-2.5 rounded-full inline-block font-bold text-white bg-gray-400 transition-colors duration-300">
+                    WAITING...
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-3 text-gray-500 uppercase tracking-wider text-sm">Current Error
+                    (MSE)</h2>
+                <div id="mse-value" class="text-4xl font-bold text-blue-600 font-mono">0.0000</div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-3 text-gray-500 uppercase tracking-wider text-sm">Context Limit
+                    (Tolerance)</h2>
+                <div id="thresh-value" class="text-4xl font-bold text-orange-500 font-mono">0.0</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Live Reconstruction Error vs Threshold</h2>
+            <div class="relative h-[400px]">
+                <canvas id="errorChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup Chart.js
+        const ctx = document.getElementById('errorChart').getContext('2d');
+        const errorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Reconstruction Error (MSE)',
+                    data: [],
+                    borderColor: 'rgb(37, 99, 235)', // Blue-600
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }, {
+                    label: 'Dynamic Threshold',
+                    data: [],
+                    borderColor: 'rgb(249, 115, 22)', // Orange-500
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 200
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Mean Squared Error' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Time (s)' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        let timeCounter = 0;
+        const MAX_POINTS = 40;
+
+        async function fetchAndUpdate() {
+            try {
+                // 1. Fetch simulated mock sensor features
+                const mockRes = await fetch('/mock_data');
+                if (!mockRes.ok) throw new Error("Failed to fetch mock data");
+                const mockData = await mockRes.json();
+
+                // 2. Send features to model for prediction
+                const predRes = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features: mockData.features, is_nighttime: mockData.is_nighttime })
+                });
+
+                if (!predRes.ok) {
+                    const errorMsg = await predRes.text();
+                    console.error("Prediction Error:", errorMsg);
+                    return;
+                }
+
+                const data = await predRes.json();
+
+                // 3. Update Status Badges & Text
+                const badge = document.getElementById('status-badge');
+                if (data.is_leak) {
+                    badge.className = "px-5 py-2.5 rounded-full inline-block font-bold text-white bg-red-500 shadow-md shadow-red-200 animate-pulse";
+                    badge.innerText = "🚨 LEAK DETECTED!";
+                } else {
+                    badge.className = "px-5 py-2.5 rounded-full inline-block font-bold text-white bg-emerald-500";
+                    badge.innerText = "🟢 NORMAL";
+                }
+
+                document.getElementById('mse-value').innerText = data.error.toFixed(4);
+                document.getElementById('thresh-value').innerText = data.threshold.toFixed(4);
+
+                // 4. Update the Chart
+                errorChart.data.labels.push(timeCounter++);
+                errorChart.data.datasets[0].data.push(data.error);
+                errorChart.data.datasets[1].data.push(data.threshold);
+
+                // Keep chart from growing infinitely
+                if (errorChart.data.labels.length > MAX_POINTS) {
+                    errorChart.data.labels.shift();
+                    errorChart.data.datasets[0].data.shift();
+                    errorChart.data.datasets[1].data.shift();
+                }
+                errorChart.update();
+
+            } catch (err) {
+                console.error("Dashboard connection error:", err);
+            }
+        }
+
+        // Poll API every 1 second
+        setInterval(fetchAndUpdate, 1000);
+    </script>
+</body>
+
+</html>

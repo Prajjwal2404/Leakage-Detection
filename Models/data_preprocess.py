@@ -1,4 +1,5 @@
 import os
+import joblib
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
@@ -64,16 +65,24 @@ def load_and_preprocess_data(scada_path, leakages_path, rolling_window=3, magnit
         # 8. Scale and Sequence Data for RNN
         print("Scaling and sequencing data for RNN...")
         Is_Nighttime = X['Is_Nighttime'].to_numpy()
-        X[X.columns] = StandardScaler().fit_transform(X[X.columns])
-        return X.to_numpy(), Y.to_numpy(), Is_Nighttime
+        
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X.to_numpy())
+        
+        # Save the scaler for future use in inference
+        checkpoint_dir = 'Checkpoints' 
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        joblib.dump(scaler, os.path.join(checkpoint_dir, 'scaler.gz'))
+
+        return X, Y.to_numpy(), Is_Nighttime
 
     return X, Y
 
 
 if __name__ == '__main__':
-    scada_file = os.path.join('Dataset', '2018_SCADA.xlsx')
-    leakages_file = os.path.join('Dataset', '2018_Leakages.csv')
-    
+    scada_file = os.path.join('..\\Dataset', '2018_SCADA.xlsx')
+    leakages_file = os.path.join('..\\Dataset', '2018_Leakages.csv')
+
     X, Y = load_and_preprocess_data(scada_file, leakages_file, rolling_window=36)
     
     print("Preprocessing Complete!")

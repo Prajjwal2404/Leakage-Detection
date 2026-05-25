@@ -26,17 +26,23 @@ During inference, if the model fails to reconstruct a sequence (resulting in a h
 ```
 Leakage-Detection/
 ├── Checkpoints/
-│   └── gru_ae_best.pth       # Trained GRU Autoencoder weights
+│   ├── gru_ae_best.pth      # Trained GRU Autoencoder weights
+│   └── scaler.gz            # StandardScaler for feature normalization
+├── Dashboard/
+│   ├── app.py                # FastAPI backend server
+│   ├── gru_ae_infer.py       # GRU inference logic for real-time predictions
+│   └── static/
+│       └── index.html        # Main dashboard page
 ├── Dataset/
 │   ├── 2018_SCADA.xlsx       # Sensor readings (pressures, flows, levels, demands)
 │   └── 2018_Leakages.csv     # Ground truth leakage events per pipe
-├── data_preprocess.py        # Alignments, scaling, sequence/sliding windows
-├── gru_ae_infer.py           # Inference Backend: Loads GRU model, outputs leak status
-├── gru_ae_model.py           # Flagship Model: GRU Seq-to-Seq Autoencoder
-├── rf_model.py               # Legacy Baseline: Random Forest
-├── xgb_model.py              # Legacy Baseline: XGBoost
-├── svm_model.py              # Legacy Baseline: Support Vector Machine (SVC)
-├── if_model.py               # Legacy Baseline: Isolation Forest
+├── Models/
+│   ├── data_preprocess.py    # Alignments, scaling, sequence/sliding windows
+│   ├── gru_ae_model.py       # Flagship Model: GRU Seq-to-Seq Autoencoder
+│   ├── rf_model.py           # Legacy Baseline: Random Forest
+│   ├── xgb_model.py          # Legacy Baseline: XGBoost
+│   ├── svm_model.py          # Legacy Baseline: Support Vector Machine (SVC)
+│   └── if_model.py           # Legacy Baseline: Isolation Forest
 └── README.md
 ```
 

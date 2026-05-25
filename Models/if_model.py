@@ -11,12 +11,10 @@ def train_evaluate_model(scada_file, leakages_file):
     X, Y = load_and_preprocess_data(scada_file, leakages_file, rolling_window=36)
     
     # Train-Test Split
-    X_train, Y_train = X[1200:int(0.03 * len(X))], Y[1200:int(0.03 * len(Y))]
-    X_test, Y_test = pd.concat([X[:1200], X[int(0.03 * len(X)):]]), pd.concat([Y[:1200], Y[int(0.03 * len(Y)):]])
+    X_train, Y_train = X[1200:int(0.04 * len(X))], Y[1200:int(0.04 * len(Y))]
+    X_test, Y_test = pd.concat([X[:1200], X[int(0.04 * len(X)):]]), pd.concat([Y[:1200], Y[int(0.04 * len(Y)):]])
     
-    # Calculate the exact contamination rate in the training set (must be > 0)
     contamination_rate = max(Y_train.mean(), 0.001)
-    
     print(f"Training samples: {len(X_train)} (Contamination rate: {contamination_rate:.4f})")
     print(f"Testing samples: {len(X_test)}")
     
@@ -28,8 +26,6 @@ def train_evaluate_model(scada_file, leakages_file):
     # 4. Predict and Evaluate on ENTIRE dataset
     print("Evaluating model on full historical data...")
     raw_pred = model.predict(X_test)
-    
-    # Map predictions back to binary (1 = leak/anomaly, 0 = normal)
     Y_pred = (raw_pred == -1).astype(int)
     
     print("\n" + "="*30)
