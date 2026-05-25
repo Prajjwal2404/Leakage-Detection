@@ -70,7 +70,7 @@ def load_and_preprocess_data(scada_path, leakages_path, rolling_window=3, magnit
         X = scaler.fit_transform(X.to_numpy())
         
         # Save the scaler for future use in inference
-        checkpoint_dir = 'Checkpoints' 
+        checkpoint_dir = '..\\Checkpoints' 
         os.makedirs(checkpoint_dir, exist_ok=True)
         joblib.dump(scaler, os.path.join(checkpoint_dir, 'scaler.gz'))
 

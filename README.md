@@ -26,8 +26,8 @@ During inference, if the model fails to reconstruct a sequence (resulting in a h
 ```
 Leakage-Detection/
 ├── Checkpoints/
-│   ├── gru_ae_best.pth      # Trained GRU Autoencoder weights
-│   └── scaler.gz            # StandardScaler for feature normalization
+│   ├── gru_ae_best.pth       # Trained GRU Autoencoder weights
+│   └── scaler.gz             # StandardScaler for feature normalization
 ├── Dashboard/
 │   ├── app.py                # FastAPI backend server
 │   ├── gru_ae_infer.py       # GRU inference logic for real-time predictions
@@ -72,6 +72,10 @@ A complete chronological alignment and sequencing pipeline:
 ### 2. Legacy Baselines (`xgb_model.py`, `rf_model.py`, `svm_model.py`, `if_model.py`)
 Standard regressor and classifier iterations that failed to cleanly navigate the massive dataset imbalance. Kept in the repository for benchmark tracking and methodology comparison.
 
+### 3. Real-Time Inference Dashboard
+- **Backend:** A FastAPI server (`app.py`) initializes the `WaterLeakageDetector` class and preloads the best `.pth` weights. It accepts batched chronological JSON arrays and pushes them tensor-by-tensor through the model.
+- **Frontend:** Built with Tailwind CSS and Chart.js, rendering a minimal streaming terminal. A polling mechanism simulates real-time SCADA acquisition (`mock_data` endpoint pulls random snapshots from your live dataset) and dynamically charts the `Reconstruction Error (MSE)` bounded by your active `Dynamic Threshold`.
+
 ---
 
 ## Setup & Usage
@@ -83,14 +87,21 @@ Standard regressor and classifier iterations that failed to cleanly navigate the
 
 ### Install Dependencies
 ```bash
-pip install torch pandas scikit-learn xgboost openpyxl
+pip install torch pandas scikit-learn xgboost openpyxl fastapi uvicorn pydantic
 ```
 
 ### Run Flagship GRU Model
 ```bash
-python gru_ae_model.py
+python Models/gru_ae_model.py
 ```
 *(This automatically calls `data_preprocess.py`, trains the PyTorch model, outputs continuous metrics, and saves a `leak_analysis.csv` file for physical magnitude crossover inspection).*
+
+### Run Live Dashboard
+After testing the model and generating the checkpoints, you can start the real-time inference dashboard:
+```bash
+python Dashboard/app.py
+```
+Then navigate to `http://localhost:8000` in your browser. The dashboard uses FastAPI and simulates a real-time streaming sensor feed by pinging your trained model.
 
 ---
 
